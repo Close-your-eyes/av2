@@ -1,0 +1,32 @@
+Package: av2
+Type: Package
+Title: Create or Run A Few ffmpeg Commands From R
+Version: 0.1.0
+Authors@R: 
+    person(given = "Christopher Mark",
+           family = "Skopnik",
+           role = c("aut", "cre"),
+           email = "vonskopnik@pm.me",
+           comment = c(ORCID = "0000-0002-6089-4769"))
+Description: Can be useful to convert video or images. The original av pkg
+    did not provide what I need. Otherwise educative.
+License: AGPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Imports:
+    av,
+    dplyr,
+    fs,
+    glue,
+    lubridate,
+    magick,
+    purrr,
+    rlang,
+    stringi,
+    stringr,
+    tibble,
+    tidyr,
+    stats,
+    devtools,
+    brathering
