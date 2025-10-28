@@ -4,7 +4,15 @@
 \alias{video_concat}
 \title{Concatenate files}
 \usage{
-video_concat(x, out_path = NULL, out_name = NULL, overwrite = F)
+video_concat(
+  x,
+  out_path = NULL,
+  out_name = NULL,
+  overwrite = F,
+  which_ffmpeg = "ffmpeg",
+  hardcode_chapter = F,
+  add_chapter = T
+)
 }
 \arguments{
 \item{x}{directory with (video) files}

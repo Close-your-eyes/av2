@@ -22,6 +22,7 @@ video_to_video(
     "debug", "trace"),
   metadata = c(title = NULL, artist = NULL, composer = NULL, album = NULL, date = NULL,
     comment = NULL, genre = NULL, copyright = NULL, track = NULL),
+  metadata_rm = F,
   cmd_to_key = c("", "title", "artist", "composer", "album", "date", "comment", "genre",
     "copyright", "track"),
   runtime_to_key = c("", "title", "artist", "composer", "album", "date", "comment",
@@ -36,7 +37,7 @@ video_to_video(
   out_name_augment = F,
   flags_add_before_i = "",
   flags_add_after_i = "",
-  which_ffmpeg = c("ffmpeg", "ffmpeg7"),
+  which_ffmpeg = "ffmpeg",
   run_cmd = T,
   skip_existing = F,
   ...
@@ -76,6 +77,8 @@ container}
 
 \item{metadata}{named vector of metadata keys to set}
 
+\item{metadata_rm}{remove all metadata?}
+
 \item{cmd_to_key}{save ffmpeg to any metadata key? provide the key name;
 one of c("title", "artist", "composer", "album", "date", "comment",
 "genre", "copyright", "track")}
@@ -109,7 +112,8 @@ TRUE puts it at end}
 
 \item{flags_add_after_i}{additional flags for ffmpeg command after input file}
 
-\item{which_ffmpeg}{which version to use}
+\item{which_ffmpeg}{which version to use. check your options with
+av2::check_ffmpeg()}
 
 \item{run_cmd}{run ffmpeg command (TRUE) or just return the string (FALSE)}
 

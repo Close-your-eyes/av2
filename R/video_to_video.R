@@ -42,7 +42,8 @@
 #' @param out_name_augment add flags to out_name to make it unique and/or
 #' descriptive; TRUE, FALSE, "end" or "start" to place flags at end or start;
 #' TRUE puts it at end
-#' @param which_ffmpeg which version to use
+#' @param which_ffmpeg which version to use. check your options with
+#' av2::check_ffmpeg()
 #' @param run_cmd run ffmpeg command (TRUE) or just return the string (FALSE)
 #' @param duration_frames how many frames to write from start
 #' @param flags_add_before_i additional flags for ffmpeg command before input file
@@ -50,6 +51,7 @@
 #' @param ... for internal use
 #' @param runtime_to_key write conversion time to a keyword?
 #' @param skip_existing skip conversion of an existing output file on disk
+#' @param metadata_rm remove all metadata?
 #'
 #' @returns cmd string
 #' @export
@@ -139,6 +141,7 @@ video_to_video <- function(x,
                                         genre = NULL,
                                         copyright = NULL,
                                         track = NULL),
+                           metadata_rm = F,
                            cmd_to_key = c(
                                "",
                                "title",
@@ -171,7 +174,7 @@ video_to_video <- function(x,
                            out_name_augment = F,
                            flags_add_before_i = "",
                            flags_add_after_i = "",
-                           which_ffmpeg = c("ffmpeg", "ffmpeg7"),
+                           which_ffmpeg = "ffmpeg",
                            run_cmd = T,
                            skip_existing = F,
                            ...) {
@@ -182,33 +185,19 @@ video_to_video <- function(x,
 
 
     # find ffmpeg more general:
-    paths <- system("echo $PATH | tr ':' '\n'", intern = T)
-    allbins <- unique(unlist(purrr::map(paths, list.files)))
-    ffmpegs <- grep("ffmpeg", allbins, value = T)
+    # paths <- system("echo $PATH | tr ':' '\n'", intern = T)
+    # allbins <- unique(unlist(purrr::map(paths, list.files)))
+    # ffmpegs <- grep("ffmpeg", allbins, value = T)
+    ffmpegs <- check_ffmpeg()
     if (!length(ffmpegs)) {
             message("FFmpeg not installed or not in PATH.")
             message("Install with macports: sudo port install ffmpeg")
             return(NULL)
     }
-
+    ff <- rlang::arg_match(which_ffmpeg, values = ffmpegs)
 
     dots <- list(...)
 
-
-    # if (!nzchar(Sys.which("ffmpeg")) && !nzchar(Sys.which("ffmpeg7"))) {
-    #     message("FFmpeg nor FFmpeg7 is installed or not in PATH.")
-    #     message("Install with macports: sudo port install ffmpeg")
-    #     return(NULL)
-    # } else if (nzchar(Sys.which("ffmpeg7"))) {
-    #     ff <- "ffmpeg7"
-    # } else if (nzchar(Sys.which("ffmpeg"))) {
-    #     ff <- "ffmpeg"
-    # }
-
-    ff <- rlang::arg_match(which_ffmpeg, values = ffmpegs)
-    # if (nzchar(Sys.which(which_ffmpeg))) {
-    #     ff <- which_ffmpeg
-    # }
 
     if (sum(!is.null(end), !is.null(duration), !is.null(duration_frames)) > 1) {
         stop("either set end or duration or duration_frames.")
@@ -294,9 +283,10 @@ video_to_video <- function(x,
     }
 
     vf_setpts_flag <- ifelse(dplyr::near(setpts, 1), "", glue::glue("setpts={setpts}*PTS"))
-    vf_scale_flag <- ifelse(is.null(scale), "", get_vf_scale_flag(scale = scale, video_width = video_width, video_height = video_height))
+    vf_scale_flag <- ifelse(is.null(scale), "setsar=1", paste0("setsar=1,", get_vf_scale_flag(scale = scale, video_width = video_width, video_height = video_height)))
     vf_arg <- paste(c(vf_scale_flag, vf_setpts_flag), collapse = ",")
     vf_arg <- sub("^,", "", vf_arg)
+    vf_arg <- sub(",$", "", vf_arg)
     vf_flag <- paste0("-vf ", shQuote(vf_arg)) # vf_fps_flag # fps=fps=25 ? ffmpeg7
     vf_flag <- ifelse(vf_flag %in% c("-vf ','", "-vf ',,'", "-vf ''"), "", vf_flag) # %in% two options in case vf_fps_flag is re-included
 
@@ -353,7 +343,12 @@ video_to_video <- function(x,
     }
     metaflag <- ""
 
-    cmd <- make_cmd_and_metaflag(cmd_glue_str = "{ff} {flags_add_before_i} {overwrite_flag} {log_flag} {ss_flag} {to_flag} {infile_flag} {t_flag} {fv_flag} {cv_flag} {r_flag} {an_flag} {preset_flag} {crf_flag} {ca_flag} {ba_flag} {flags_add_after_i} {metaflag} {vf_flag} {outfile_flag}",
+    metadata_rm_flag <- ""
+    if (metadata_rm) {
+        metadata_rm_flag <- "-map_metadata -1"
+    }
+
+    cmd <- make_cmd_and_metaflag(cmd_glue_str = "{ff} {flags_add_before_i} {overwrite_flag} {log_flag} {ss_flag} {to_flag} {infile_flag} {t_flag} {fv_flag} {cv_flag} {r_flag} {an_flag} {preset_flag} {crf_flag} {ca_flag} {ba_flag} {flags_add_after_i} {metaflag} {metadata_rm_flag} {vf_flag} {outfile_flag}",
                                  ff = ff,
                                  overwrite_flag = overwrite_flag,
                                  log_flag = log_flag,
@@ -375,7 +370,8 @@ video_to_video <- function(x,
                                  vf_flag = vf_flag,
                                  outfile_flag = outfile_flag,
                                  metadata = metadata,
-                                 cmd_to_key = cmd_to_key)
+                                 cmd_to_key = cmd_to_key,
+                                 metadata_rm_flag = metadata_rm_flag)
 
     if (run_cmd) {
         message("ffmpeg cmd: ", cmd)
@@ -422,7 +418,8 @@ make_cmd_and_metaflag <- function(cmd_glue_str,
                                   vf_flag,
                                   outfile_flag,
                                   metadata,
-                                  cmd_to_key) {
+                                  cmd_to_key,
+                                  metadata_rm_flag) {
 
     # position of  {filterv_flag} before output is important!!!
     cmd <- stringr::str_squish(glue::glue(cmd_glue_str))

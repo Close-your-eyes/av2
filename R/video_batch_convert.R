@@ -135,6 +135,7 @@ video_batch_convert <- function(x,
             #dplyr::rowwise() |>
             dplyr::mutate(value = eval(parse(text = value))) |>
             dplyr::filter(value > fps_reduce_to) |>
+            dplyr::mutate(file = basename(file)) |>
             dplyr::pull(file)
         for (i in vid_to_red_fps) {
             video_to_video_args_list[[i]][["fps_out"]] <- fps_reduce_to
@@ -168,6 +169,7 @@ video_batch_convert <- function(x,
 
     message("undo renaming with:")
     print(substitute(fs::file_move(x_new, x)))
+
 
     for (i in video_to_video_args_list) {
         do.call(video_to_video, args = i)
