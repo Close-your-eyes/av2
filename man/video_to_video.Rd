@@ -37,7 +37,7 @@ video_to_video(
   out_name_augment = F,
   flags_add_before_i = "",
   flags_add_after_i = "",
-  which_ffmpeg = "ffmpeg",
+  which_ffmpeg = "ffmpeg8",
   run_cmd = T,
   skip_existing = F,
   ...
@@ -155,5 +155,7 @@ ffmpeg 4.4.6 and 7.1.1 behave different here! with v7, frames are not dropped
 chatgpt also gives wrong answers
 see https://ffmpeg.org/ffmpeg-filters.html#fps and https://trac.ffmpeg.org/wiki/ChangingFrameRate#Verifyingframeratechanges
 so it is very complicated, but vf = fps=fps=25 as in av package appears there
+
+# use flags_add_after_i = "-tag:v hvc1" with libx265
 }
 }

@@ -80,6 +80,8 @@
 #' chatgpt also gives wrong answers
 #' see https://ffmpeg.org/ffmpeg-filters.html#fps and https://trac.ffmpeg.org/wiki/ChangingFrameRate#Verifyingframeratechanges
 #' so it is very complicated, but vf = fps=fps=25 as in av package appears there
+#'
+#' # use flags_add_after_i = "-tag:v hvc1" with libx265
 #' }
 video_to_video <- function(x,
                            out_path = NULL,
@@ -174,7 +176,7 @@ video_to_video <- function(x,
                            out_name_augment = F,
                            flags_add_before_i = "",
                            flags_add_after_i = "",
-                           which_ffmpeg = "ffmpeg",
+                           which_ffmpeg = "ffmpeg8",
                            run_cmd = T,
                            skip_existing = F,
                            ...) {
@@ -203,6 +205,10 @@ video_to_video <- function(x,
         stop("either set end or duration or duration_frames.")
     }
 
+    if (encoder == "libx265" && flags_add_after_i == "") {
+        message("consider using flags_add_after_i = '-tag:v hvc1' with libx265.")
+    }
+
     x <- unshquote(x)
     infile_flag <- ""
     ## special case for img_to_video
@@ -216,6 +222,8 @@ video_to_video <- function(x,
         #info <- av::av_media_info(x)
         info <- media_info(x)
         infile_flag <- glue::glue("-i {shQuote(x)}")
+    } else {
+        info <- list(...)[["info"]]
     }
 
     out_path <- ifelse(is.null(out_path), file.path(dirname(x)), suppressWarnings(normalizePath(out_path)))
@@ -254,6 +262,8 @@ video_to_video <- function(x,
     video_codec <- info |>
         dplyr::filter(key2 == "video_codec_name") |>
         dplyr::pull(value)
+
+
 
     # do alter setpts below?
     alt_pts <- F

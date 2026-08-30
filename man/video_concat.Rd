@@ -9,7 +9,7 @@ video_concat(
   out_path = NULL,
   out_name = NULL,
   overwrite = F,
-  which_ffmpeg = "ffmpeg",
+  which_ffmpeg = "ffmpeg8",
   hardcode_chapter = F,
   add_chapter = T
 )

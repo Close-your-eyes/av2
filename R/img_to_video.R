@@ -78,7 +78,10 @@ img_to_video <- function(x,
     info <- list(duration = 1)
     info[["video"]][["width"]] <- imginfo$width
     info[["video"]][["height"]] <- imginfo$height
-    info[["video"]][["framerate"]] <- fps_out
+    info[["video"]][["r_frame_rate"]] <- fps_out
+    info[["video"]][["codec_name"]] <- encoder
+
+    info <- tibble::enframe(unlist(purrr::list_flatten(info)), name = "key2")
 
     out_path <- ifelse(is.null(out_path), x, out_path)
 

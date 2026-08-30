@@ -6,9 +6,6 @@
 \usage{
 get_metadata(filepath, format = c("flat", "json", "xml", "default", "csv"))
 }
-\arguments{
-\item{format}{}
-}
 \description{
 Title
 }

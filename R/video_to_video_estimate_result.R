@@ -21,6 +21,8 @@ video_to_video_estimate_result <- function(x,
                                            sample_duration = 10,
                                            video_to_video_args = list()) {
 
+    stop("fix get_metadata_extended: replace with media_info.")
+
     preset <- rlang::arg_match(preset, multiple = T)
     video_to_video_args <- c(video_to_video_args, list(x = x, cmd_to_key = "comment", runtime_to_key = "composer"))
     info <- av2::media_info(x)
@@ -50,7 +52,7 @@ video_to_video_estimate_result <- function(x,
 
     # check results
     df <-
-        get_metadata_extended(x = out_names) |>
+        get_metadata_extended(x = out_names) |> # replace with media_info
         dplyr::mutate(runtime_s = round(as.numeric(purrr::map_chr(out_names, get_metadata_tag, tag = "composer")), 3)) |>
         dplyr::mutate(runtime_s = ifelse(runtime_s < 0, 0, runtime_s)) |>
         dplyr::mutate(totalsec = totalsec, duration = as.numeric(duration), size_megabits = as.numeric(size_megabits)) |>

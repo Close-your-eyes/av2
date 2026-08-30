@@ -124,7 +124,6 @@ video_batch_convert <- function(x,
     }
 
     # get bitrate
-    #media_info_df <- get_media_info(x_new)
     media_info_df <- media_info(x_new)
 
     ## manage fps reduction
