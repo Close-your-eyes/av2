@@ -21,8 +21,6 @@ video_to_video_estimate_result <- function(x,
                                            sample_duration = 10,
                                            video_to_video_args = list()) {
 
-    stop("fix get_metadata_extended: replace with media_info.")
-
     preset <- rlang::arg_match(preset, multiple = T)
     video_to_video_args <- c(video_to_video_args, list(x = x, cmd_to_key = "comment", runtime_to_key = "composer"))
     info <- av2::media_info(x)
@@ -36,10 +34,12 @@ video_to_video_estimate_result <- function(x,
 
 
     out_names <- character(0)
+    settings <- character(0)
     for (i in preset) {
         for (j in quality_crf) {
             for (k in sample_starts) {
-                out_name <- paste0(basename(x), "_", i, "_", j, "_", k)
+                # out_name <- paste0(basename(x), "_", i, "_", j, "_", k)
+                settings <- c(settings, paste0(i, "_", j))
                 cmd <- do.call(video_to_video, args = c(video_to_video_args, list(preset = i,
                                                                                   quality_crf = j,
                                                                                   start = k,
@@ -50,19 +50,22 @@ video_to_video_estimate_result <- function(x,
         }
     }
 
+
+    settings <- strsplit(settings, "_")
     # check results
-    df <-
-        get_metadata_extended(x = out_names) |> # replace with media_info
-        dplyr::mutate(runtime_s = round(as.numeric(purrr::map_chr(out_names, get_metadata_tag, tag = "composer")), 3)) |>
+    tt0 <- media_info(x, return = "wide")
+    tt <- media_info(out_names, return = "wide")
+    df <- tt |>
+        dplyr::mutate(runtime_s = round(as.numeric(format_tags.COMPOSER))) |>
         dplyr::mutate(runtime_s = ifelse(runtime_s < 0, 0, runtime_s)) |>
-        dplyr::mutate(totalsec = totalsec, duration = as.numeric(duration), size_megabits = as.numeric(size_megabits)) |>
-        dplyr::mutate(fraction = duration/totalsec)
+        dplyr::mutate(fraction = format_duration/tt0$format_duration) |>
+        dplyr::mutate(preset = sapply(settings, "[", 1), crf = sapply(settings, "[", 2))
 
     df_summary <- df |>
-        dplyr::summarise(size_megabyte_expected = mean(size_megabits*(1/fraction))/8,
+        dplyr::summarise(size_megabyte_expected = mean(format_size_megabits*(1/fraction))/8,
                          runtime_expected_min = mean(runtime_s*(1/fraction))/60,
-                         size_megabyte_mean = mean(size_megabits)/8,
-                         size_megabyte_sd = stats::sd(size_megabits)/8,
+                         size_megabyte_mean = mean(format_size_megabits)/8,
+                         size_megabyte_sd = stats::sd(format_size_megabits)/8,
                          runtime_s_mean = mean(runtime_s)/60,
                          runtime_s_sd = stats::sd(runtime_s)/60,
                          .by = c(preset, crf))

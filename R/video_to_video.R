@@ -205,9 +205,7 @@ video_to_video <- function(x,
         stop("either set end or duration or duration_frames.")
     }
 
-    if (encoder == "libx265" && flags_add_after_i == "") {
-        message("consider using flags_add_after_i = '-tag:v hvc1' with libx265.")
-    }
+
 
     x <- unshquote(x)
     infile_flag <- ""
@@ -236,6 +234,9 @@ video_to_video <- function(x,
     log_level <- rlang::arg_match(log_level)
     container <- rlang::arg_match(container)
 
+    if (encoder == "libx265" && flags_add_after_i == "") {
+        message("consider using flags_add_after_i = '-tag:v hvc1' with libx265.")
+    }
 
     if (runtime_to_key != "" && runtime_to_key == cmd_to_key) {
         stop("runtime_to_key and cmd_to_key should be unequal.")
