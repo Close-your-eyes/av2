@@ -61,6 +61,8 @@ img_to_video <- function(x,
                          flags_add_after_i = "-pix_fmt yuv420p",
                          which_ffmpeg = c("ffmpeg", "ffmpeg7")) {
 
+    av2:::.ensure_package("magick")
+
     encoder <- rlang::arg_match(encoder)
     container <- rlang::arg_match(container)
 

@@ -166,6 +166,7 @@ media_info <- function(x,
 
     # nb_frames are total frames
     if (return == "wide") {
+        av2:::.ensure_package("brathering")
         df <- brathering::df_cols_to_numeric(df |>
                                                  dplyr::select(file, value, key2) |>
                                                  tidyr::pivot_wider(names_from = key2, values_from = value))
@@ -239,7 +240,6 @@ media_info <- function(x,
 #'     long_df <- dplyr::bind_rows(duration_long, video_df, audio_df)
 #'     return(long_df)
 #' }
-
 
 
 

@@ -181,11 +181,6 @@ video_to_video <- function(x,
                            skip_existing = F,
                            ...) {
 
-    if (!requireNamespace("brathering", quietly = T)) {
-        devtools::install_github("Close-your-eyes/brathering")
-    }
-
-
     # find ffmpeg more general:
     # paths <- system("echo $PATH | tr ':' '\n'", intern = T)
     # allbins <- unique(unlist(purrr::map(paths, list.files)))
@@ -342,6 +337,7 @@ video_to_video <- function(x,
     container <- paste0(".", container)
     output <- file.path(out_path, ifelse(grepl(paste0("\\",container,"$"), out_name), out_name, paste0(out_name, container)))
     if (!overwrite && !skip_existing) {
+        av2:::.ensure_package("brathering")
         output <- brathering::make_filepath_unique(output)
     }
     outfile_flag <- glue::glue("{shQuote(output)}")
@@ -388,6 +384,7 @@ video_to_video <- function(x,
         message("ffmpeg cmd: ", cmd)
 
         if (runtime_to_key != "") {
+            av2:::.ensure_package("brathering")
             msg <- system.time(system(cmd, intern = T))
             runtime <- stats::setNames(as.numeric(msg), names(msg))
             runtime <- runtime[["elapsed"]]-runtime[["sys.self"]]-runtime[["sys.child"]]

@@ -13,20 +13,23 @@ Description: Can be useful to convert video or images. The original av pkg
 License: AGPL (>= 3)
 Encoding: UTF-8
 LazyData: true
+Depends:
+    R (>= 4.1.0)
 Imports:
-    av,
     dplyr,
     fs,
     glue,
-    lubridate,
-    magick,
     purrr,
     rlang,
-    stringi,
     stringr,
     tibble,
     tidyr,
-    stats,
-    devtools,
-    brathering
-Config/roxygen2/version: 8.0.0
+    stats
+Suggests:
+    brathering,
+    lubridate,
+    magick,
+    pak,
+    stringi,
+    vroom
+Config/roxygen2/version: 8.1.0

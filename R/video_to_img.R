@@ -71,6 +71,8 @@ video_to_img <- function(x,
                              "trace"    # Extremely detailed logs
                          )) {
 
+    av2:::.ensure_package("stringi")
+
     if (!is.null(total_frames) && !is.null(fps_sample)) {
         stop("set total_frames or total_frames, not both.")
     }
@@ -273,6 +275,11 @@ video_to_img_old <- function(x,
 
     overwrite <- ifelse(overwrite, "-y", "-n")
 
+    if ((!is.null(start) && !grepl(":", start)) ||
+        (!is.null(end) && !grepl(":", end))) {
+        av2:::.ensure_package("lubridate")
+    }
+
     if (!is.null(start)) {
         if (!grepl(":", start)) {
             # start in plain seconds
@@ -330,5 +337,3 @@ video_to_img_old <- function(x,
     message("call: ", cmd)
     system(cmd, intern = T)
 }
-
-

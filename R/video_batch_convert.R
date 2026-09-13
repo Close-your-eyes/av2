@@ -71,9 +71,7 @@ video_batch_convert <- function(x,
                                 height_reduce_to = NULL,
                                 video_to_video_args = list()) {
 
-    if (!requireNamespace("brathering", quietly = T)) {
-        devtools::install_github("Close-your-eyes/brathering")
-    }
+    av2:::.ensure_package("brathering")
 
     #handle filenames etc first
     x <- x_dir_or_files(x)
@@ -176,5 +174,4 @@ video_batch_convert <- function(x,
 
     return(stats::setNames(x, x_new))
 }
-
 

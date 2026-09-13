@@ -19,10 +19,6 @@ video_concat <- function(x,
                          hardcode_chapter = F,
                          add_chapter = T) {
 
-    if (!requireNamespace("brathering", quietly = T)) {
-        devtools::install_github("Close-your-eyes/brathering")
-    }
-
     ffmpegs <- check_ffmpeg()
     if (!length(ffmpegs)) {
         message("FFmpeg not installed or not in PATH.")
@@ -69,6 +65,7 @@ video_concat <- function(x,
     output <- fs::path(out_path, out_name)
 
     if (!overwrite) {
+        av2:::.ensure_package("brathering")
         output <- brathering::make_filepath_unique(output)
     }
     overwrite <- ifelse(overwrite, "-y", "-n")
@@ -81,6 +78,7 @@ video_concat <- function(x,
 
     metadata_flags <- " "
     if (add_chapter) {
+        av2:::.ensure_package("vroom")
         metadata_flags <- paste0(" -i ", chapterdata[[1]], " -map_metadata 1 ")
         vroom::vroom_write_lines(x = chapterdata[[2]], file = chapterdata[[1]])
     }
