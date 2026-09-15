@@ -33,6 +33,7 @@ video_to_video(
   duration = NULL,
   duration_frames = NULL,
   scale = NULL,
+  crop = NULL,
   quality_crf = NULL,
   out_name_augment = F,
   flags_add_before_i = "",
@@ -101,6 +102,9 @@ hh:mm:ss format of just a number of seconds}
 
 \item{scale}{resize output images, c(width, height); either something like
 c(1280, 720) for exact pixels or c(0.5, 0.5) for fraction of input}
+
+\item{crop}{crop output video, c(width, height, x, y), where x and y define
+the top-left corner of the cropped area}
 
 \item{quality_crf}{-crf flag: see ?video_batch_convert}
 

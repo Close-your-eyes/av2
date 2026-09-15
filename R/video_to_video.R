@@ -19,6 +19,8 @@
 #' @param end end time, format like start; -to flag of ffmpeg
 #' @param scale resize output images, c(width, height); either something like
 #' c(1280, 720) for exact pixels or c(0.5, 0.5) for fraction of input
+#' @param crop crop output video, c(width, height, x, y), where x and y define
+#' the top-left corner of the cropped area
 #' @param out_name name of output file w/o file extension
 #' @param setpts setpts argument of -vf flag; controls playback speed of output file;
 #' relative timestamp conversion of frames; if NULL, subject to change
@@ -172,6 +174,7 @@ video_to_video <- function(x,
                            duration = NULL,
                            duration_frames = NULL,
                            scale = NULL,
+                           crop = NULL,
                            quality_crf = NULL,
                            out_name_augment = F,
                            flags_add_before_i = "",
@@ -289,8 +292,9 @@ video_to_video <- function(x,
     }
 
     vf_setpts_flag <- ifelse(dplyr::near(setpts, 1), "", glue::glue("setpts={setpts}*PTS"))
+    vf_crop_flag <- ifelse(is.null(crop), "", .get_vf_crop_flag(crop = crop))
     vf_scale_flag <- ifelse(is.null(scale), "setsar=1", paste0("setsar=1,", get_vf_scale_flag(scale = scale, video_width = video_width, video_height = video_height)))
-    vf_arg <- paste(c(vf_scale_flag, vf_setpts_flag), collapse = ",")
+    vf_arg <- paste(c(vf_crop_flag, vf_scale_flag, vf_setpts_flag), collapse = ",")
     vf_arg <- sub("^,", "", vf_arg)
     vf_arg <- sub(",$", "", vf_arg)
     vf_flag <- paste0("-vf ", shQuote(vf_arg)) # vf_fps_flag # fps=fps=25 ? ffmpeg7
@@ -548,4 +552,17 @@ get_vf_scale_flag <- function(scale, video_width, video_height) {
     scale <- paste0(scale[1], ":", scale[2])
     vf_scale_flag <- glue::glue("scale={scale}")
     return(vf_scale_flag)
+}
+
+.get_vf_crop_flag <- function(crop) {
+    if (length(crop) != 4) {
+        stop("crop must be numeric of length 4.")
+    }
+    if (any(is.na(crop))) {
+        stop("crop cannot contain NA.")
+    }
+
+    crop <- paste0(crop[1], ":", crop[2], ":", crop[3], ":", crop[4])
+    vf_crop_flag <- glue::glue("crop={crop}")
+    return(vf_crop_flag)
 }
