@@ -55,7 +55,7 @@ video_to_img <- function(x,
                          start = NULL,
                          end = NULL,
                          scale = NULL,
-                         which_ffmpeg = c("ffmpeg", "ffmpeg7"),
+                         which_ffmpeg = c("ffmpeg8", "ffmpeg7", "ffmpeg"),
                          flags_add_before_i = "",
                          flags_add_after_i = "",
                          log_level = c(

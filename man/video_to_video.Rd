@@ -12,12 +12,13 @@ video_to_video(
   setpts = NULL,
   fps_out = NULL,
   audio_rm = F,
-  audio_encoder = NULL,
+  audio_encoder = "copy",
   audio_bitrate = NULL,
-  encoder = c("", "libx264", "libx265", "libvpx_vp9", "gif", "copy", "h264_videotoolbox"),
+  encoder = c("", "libx264", "libx265", "libvpx_vp9", "gif", "copy", "h264_videotoolbox",
+    "hevc_videotoolbox"),
   container = c("", "mp4", "mkv", "webm", "gif", "avi", "mov"),
-  preset = c("", "medium", "ultrafast", "superfast", "veryfast", "faster", "fast",
-    "slow", "slower", "veryslow"),
+  preset = c("veryfast", "medium", "ultrafast", "superfast", "faster", "fast", "slow",
+    "slower", "veryslow"),
   log_level = c("", "info", "quiet", "panic", "fatal", "error", "warning", "verbose",
     "debug", "trace"),
   metadata = c(title = NULL, artist = NULL, composer = NULL, album = NULL, date = NULL,
@@ -37,7 +38,7 @@ video_to_video(
   quality_crf = NULL,
   out_name_augment = F,
   flags_add_before_i = "",
-  flags_add_after_i = "",
+  flags_add_after_i = "-map 0:v:0 -map '0:a?'",
   which_ffmpeg = "ffmpeg8",
   run_cmd = T,
   skip_existing = F,
@@ -72,7 +73,7 @@ container}
 
 \item{container}{output container/ file ext, if NULL same as input file ext}
 
-\item{preset}{-preset flag: strength of compression}
+\item{preset}{-preset flag: strength of compression; omitted for VideoToolbox encoders}
 
 \item{log_level}{amount of log info}
 
@@ -160,6 +161,27 @@ chatgpt also gives wrong answers
 see https://ffmpeg.org/ffmpeg-filters.html#fps and https://trac.ffmpeg.org/wiki/ChangingFrameRate#Verifyingframeratechanges
 so it is very complicated, but vf = fps=fps=25 as in av package appears there
 
+# Apple Silicon hardware HEVC encoding and decoding:
+# -q:v 65 sets the video encoding quality. With hevc_videotoolbox, the scale runs from 0 to 100, with higher values requesting better quality.
+# - Lower values: generally smaller files, more visible compression.
+# - Higher values: generally larger files, better detail.
+# - 100: maximum quality setting, not guaranteed lossless.
+# hevc_videotoolbox uses the M4’s dedicated media engine, separate from its general-purpose GPU cores. Apple lists hardware HEVC encoding and decoding under that media engine. Apple specifications
+# Activity Monitor’s GPU usage therefore isn’t a reliable indicator of whether this encoding is hardware accelerated. Near-zero GPU usage can be normal.
+# To explicitly require hardware encoding, add -allow_sw 0
+# installed FFmpeg already defaults to this setting. If encoding succeeds with hevc_videotoolbox and software fallback disabled, it’s using hardware encoding.
+# - -prio_speed 1 asks Apple’s encoder to prioritize speed, potentially sacrificing quality. Your FFmpeg supports the option, but the actual improvement depends on the hardware and encoding settings. Apple documentation
+# - audio_encoder = "copy" avoids audio encoding work and preserves the original audio. The audio format must be supported by the output container.
+# Compare both versions on the same excerpt using duration = 120. Check FFmpeg’s final speed= reading and inspect the resulting picture quality.
+video_to_video(
+  x = x,
+  encoder = "hevc_videotoolbox",
+  flags_add_before_i = "-hwaccel videotoolbox",
+  flags_add_after_i = "-q:v 65 -tag:v hvc1"
+)
+
 # use flags_add_after_i = "-tag:v hvc1" with libx265
+# -map 0:v:0 selects the first video stream.
+# -map '0:a?' selects every audio stream; ? allows inputs with no audio.
 }
 }

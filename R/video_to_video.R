@@ -32,7 +32,7 @@
 #' @param encoder video encoder/format; checked in combination with
 #' container
 #' @param container output container/ file ext, if NULL same as input file ext
-#' @param preset -preset flag: strength of compression
+#' @param preset -preset flag: strength of compression; omitted for VideoToolbox encoders
 #' @param log_level amount of log info
 #' @param metadata named vector of metadata keys to set
 #' @param cmd_to_key save ffmpeg to any metadata key? provide the key name;
@@ -83,7 +83,28 @@
 #' see https://ffmpeg.org/ffmpeg-filters.html#fps and https://trac.ffmpeg.org/wiki/ChangingFrameRate#Verifyingframeratechanges
 #' so it is very complicated, but vf = fps=fps=25 as in av package appears there
 #'
+#' # Apple Silicon hardware HEVC encoding and decoding:
+#' # -q:v 65 sets the video encoding quality. With hevc_videotoolbox, the scale runs from 0 to 100, with higher values requesting better quality.
+#' # - Lower values: generally smaller files, more visible compression.
+#' # - Higher values: generally larger files, better detail.
+#' # - 100: maximum quality setting, not guaranteed lossless.
+#' # hevc_videotoolbox uses the M4’s dedicated media engine, separate from its general-purpose GPU cores. Apple lists hardware HEVC encoding and decoding under that media engine. Apple specifications
+#' # Activity Monitor’s GPU usage therefore isn’t a reliable indicator of whether this encoding is hardware accelerated. Near-zero GPU usage can be normal.
+#' # To explicitly require hardware encoding, add -allow_sw 0
+#' # installed FFmpeg already defaults to this setting. If encoding succeeds with hevc_videotoolbox and software fallback disabled, it’s using hardware encoding.
+#' # - -prio_speed 1 asks Apple’s encoder to prioritize speed, potentially sacrificing quality. Your FFmpeg supports the option, but the actual improvement depends on the hardware and encoding settings. Apple documentation
+#' # - audio_encoder = "copy" avoids audio encoding work and preserves the original audio. The audio format must be supported by the output container.
+#' # Compare both versions on the same excerpt using duration = 120. Check FFmpeg’s final speed= reading and inspect the resulting picture quality.
+#' video_to_video(
+#'   x = x,
+#'   encoder = "hevc_videotoolbox",
+#'   flags_add_before_i = "-hwaccel videotoolbox",
+#'   flags_add_after_i = "-q:v 65 -tag:v hvc1"
+#' )
+#'
 #' # use flags_add_after_i = "-tag:v hvc1" with libx265
+#' # -map 0:v:0 selects the first video stream.
+#' # -map '0:a?' selects every audio stream; ? allows inputs with no audio.
 #' }
 video_to_video <- function(x,
                            out_path = NULL,
@@ -92,7 +113,7 @@ video_to_video <- function(x,
                            setpts = NULL,
                            fps_out = NULL,
                            audio_rm = F,
-                           audio_encoder = NULL,
+                           audio_encoder = "copy",
                            audio_bitrate = NULL,
                            encoder = c(
                                "",
@@ -101,7 +122,8 @@ video_to_video <- function(x,
                                "libvpx_vp9",
                                "gif",
                                "copy",
-                               "h264_videotoolbox"
+                               "h264_videotoolbox",
+                               "hevc_videotoolbox"
                            ),
                            container = c(
                                "",
@@ -113,11 +135,10 @@ video_to_video <- function(x,
                                "mov"
                            ),
                            preset = c(
-                               "",
+                               "veryfast",
                                "medium",
                                "ultrafast",
                                "superfast",
-                               "veryfast",
                                "faster",
                                "fast",
                                "slow",
@@ -178,7 +199,7 @@ video_to_video <- function(x,
                            quality_crf = NULL,
                            out_name_augment = F,
                            flags_add_before_i = "",
-                           flags_add_after_i = "",
+                           flags_add_after_i = "-map 0:v:0 -map '0:a?'",
                            which_ffmpeg = "ffmpeg8",
                            run_cmd = T,
                            skip_existing = F,
@@ -232,8 +253,9 @@ video_to_video <- function(x,
     log_level <- rlang::arg_match(log_level)
     container <- rlang::arg_match(container)
 
-    if (encoder == "libx265" && flags_add_after_i == "") {
-        message("consider using flags_add_after_i = '-tag:v hvc1' with libx265.")
+    if (encoder == "libx265" && !grepl("-tag:v hvc1", flags_add_after_i)) {
+        message("using flags_add_after_i = '-tag:v hvc1' with libx265.")
+        flags_add_after_i <- paste0(flags_add_after_i, " -tag:v hvc1")
     }
 
     if (runtime_to_key != "" && runtime_to_key == cmd_to_key) {
@@ -309,7 +331,8 @@ video_to_video <- function(x,
                                       codec = encoder)
 
     cv_flag <- ifelse(container == "gif" || encoder == "", "", glue::glue("-c:v {encoder}"))
-    preset_flag <- ifelse(preset == "", "", glue::glue("-preset {preset}"))
+    preset_flag <- ifelse(preset == "" || encoder %in% c("h264_videotoolbox", "hevc_videotoolbox"),
+                          "", glue::glue("-preset {preset}"))
     ss_flag <- ifelse(is.null(start), "", glue::glue("-ss {start}"))
     to_flag <- ifelse(is.null(end), "", glue::glue("-to {end}"))
     t_flag <- ifelse(is.null(duration), "", glue::glue("-t {duration}"))
@@ -462,6 +485,7 @@ select_output_format <- function(input_container, input_codec, codec = NULL, out
         libx265      = c("mp4", "mkv", "mov", "ts"),
         libvpx_vp9   = c("webm"),
         h264_videotoolbox = c("mp4"),
+        hevc_videotoolbox = c("mp4", "mkv", "mov", "ts"),
         gif          = c("gif") # special case
     )
 
