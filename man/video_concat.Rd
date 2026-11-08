@@ -2,7 +2,7 @@
 % Please edit documentation in R/video_concat.R
 \name{video_concat}
 \alias{video_concat}
-\title{Concatenate files}
+\title{Concatenate Video Files}
 \usage{
 video_concat(
   x,
@@ -15,17 +15,70 @@ video_concat(
 )
 }
 \arguments{
-\item{x}{directory with (video) files}
+\item{x}{Character string giving an existing directory containing the input
+videos. Files should have the same extension and compatible streams. Name
+files in the intended playback order, for example, \code{clip01.mp4},
+\code{clip02.mp4}, and \code{clip03.mp4}.}
 
-\item{out_path}{output path, defaults to x}
+\item{out_path}{Output directory. Must already exist. If \code{NULL}, use \code{x}.}
 
-\item{out_name}{output name, defaults to 'firstfilename'___'lastfilename'}
+\item{out_name}{Output file name. If \code{NULL}, combine the first and last input
+file names without their extensions, separated by \verb{___}, and append the
+input extension. If supplied without an extension, the input extension is
+appended. A supplied extension must match the input extension.}
 
-\item{overwrite}{overwrite output file?}
+\item{overwrite}{Logical; overwrite an existing output file? If \code{FALSE},
+create a unique output path using \code{brathering::make_filepath_unique()}.}
+
+\item{which_ffmpeg}{FFmpeg executable name, selected from the names returned
+by \code{check_ffmpeg()}. Defaults to \code{"ffmpeg8"}, which must be available on
+\code{PATH} when this default is used.}
+
+\item{hardcode_chapter}{Logical; burn sequential chapter numbers into the
+upper-left corner of the video? Each input file defines one chapter.
+If \code{TRUE}, video is re-encoded instead of using stream copy. Defaults to
+\code{FALSE}.}
+
+\item{add_chapter}{Logical; add chapter metadata to the output? Each input
+file defines one chapter, titled with its sequential number. Defaults to
+\code{TRUE}. Can be used together with \code{hardcode_chapter}.}
 }
 \value{
-nothing
+Invisibly, a logical vector indicating whether each intermediate
+\code{.ts} file was removed. This does not indicate whether FFmpeg succeeded.
+Returns \code{NULL} if no FFmpeg executable is found.
 }
 \description{
-Must be files of same type in folder x, named in sequential order.
+Join video files from a directory in file-name order using FFmpeg, with
+optional chapter metadata and visible chapter numbers.
+}
+\details{
+Inputs are listed non-recursively in the order returned by \code{\link[=list.files]{list.files()}}.
+The most frequent file extension is selected, and paths ending in that
+extension are retained. Keep only the intended inputs in \code{x}; an existing
+output in the same directory can be selected on a later call.
+
+Each input is first copied into an intermediate MPEG transport stream with
+the same base name and a \code{.ts} extension beside the input. These intermediate
+files are removed after concatenation. Use a directory without existing
+\code{.ts} files that could conflict with these paths. Streams are copied to the
+output unless \code{hardcode_chapter} is \code{TRUE}.
+
+FFmpeg must be installed and available on \code{PATH}. Chapter options also
+require \code{ffprobe} on \code{PATH} to read input durations. Adding chapter metadata
+requires the \pkg{vroom} package; creating a unique output path requires
+\pkg{brathering}. Paths should not contain spaces or shell metacharacters,
+because not all paths in the generated commands are shell-quoted.
+}
+\examples{
+\dontrun{
+# Join sequentially named clips and add chapter metadata.
+video_concat("clips", out_path = "output", out_name = "joined.mp4")
+
+# Burn chapter numbers into the video without adding chapter metadata.
+video_concat(
+  "clips", out_path = "output", out_name = "numbered.mp4",
+  hardcode_chapter = TRUE, add_chapter = FALSE
+)
+}
 }

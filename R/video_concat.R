@@ -1,16 +1,65 @@
-#' Concatenate files
+#' Concatenate Video Files
 #'
-#' Must be files of same type in folder x, named in sequential order.
+#' Join video files from a directory in file-name order using FFmpeg, with
+#' optional chapter metadata and visible chapter numbers.
 #'
-#' @param x directory with (video) files
-#' @param out_path output path, defaults to x
-#' @param out_name output name, defaults to 'firstfilename'___'lastfilename'
-#' @param overwrite overwrite output file?
+#' @param x Character string giving an existing directory containing the input
+#'   videos. Files should have the same extension and compatible streams. Name
+#'   files in the intended playback order, for example, `clip01.mp4`,
+#'   `clip02.mp4`, and `clip03.mp4`.
+#' @param out_path Output directory. Must already exist. If `NULL`, use `x`.
+#' @param out_name Output file name. If `NULL`, combine the first and last input
+#'   file names without their extensions, separated by `___`, and append the
+#'   input extension. If supplied without an extension, the input extension is
+#'   appended. A supplied extension must match the input extension.
+#' @param overwrite Logical; overwrite an existing output file? If `FALSE`,
+#'   create a unique output path using `brathering::make_filepath_unique()`.
+#' @param which_ffmpeg FFmpeg executable name, selected from the names returned
+#'   by `check_ffmpeg()`. Defaults to `"ffmpeg8"`, which must be available on
+#'   `PATH` when this default is used.
+#' @param hardcode_chapter Logical; burn sequential chapter numbers into the
+#'   upper-left corner of the video? Each input file defines one chapter.
+#'   If `TRUE`, video is re-encoded instead of using stream copy. Defaults to
+#'   `FALSE`.
+#' @param add_chapter Logical; add chapter metadata to the output? Each input
+#'   file defines one chapter, titled with its sequential number. Defaults to
+#'   `TRUE`. Can be used together with `hardcode_chapter`.
 #'
-#' @returns nothing
+#' @details
+#' Inputs are listed non-recursively in the order returned by [list.files()].
+#' The most frequent file extension is selected, and paths ending in that
+#' extension are retained. Keep only the intended inputs in `x`; an existing
+#' output in the same directory can be selected on a later call.
+#'
+#' Each input is first copied into an intermediate MPEG transport stream with
+#' the same base name and a `.ts` extension beside the input. These intermediate
+#' files are removed after concatenation. Use a directory without existing
+#' `.ts` files that could conflict with these paths. Streams are copied to the
+#' output unless `hardcode_chapter` is `TRUE`.
+#'
+#' FFmpeg must be installed and available on `PATH`. Chapter options also
+#' require `ffprobe` on `PATH` to read input durations. Adding chapter metadata
+#' requires the \pkg{vroom} package; creating a unique output path requires
+#' \pkg{brathering}. Paths should not contain spaces or shell metacharacters,
+#' because not all paths in the generated commands are shell-quoted.
+#'
+#' @returns Invisibly, a logical vector indicating whether each intermediate
+#'   `.ts` file was removed. This does not indicate whether FFmpeg succeeded.
+#'   Returns `NULL` if no FFmpeg executable is found.
 #' @export
+#' @md
 #'
 #' @examples
+#' \dontrun{
+#' # Join sequentially named clips and add chapter metadata.
+#' video_concat("clips", out_path = "output", out_name = "joined.mp4")
+#'
+#' # Burn chapter numbers into the video without adding chapter metadata.
+#' video_concat(
+#'   "clips", out_path = "output", out_name = "numbered.mp4",
+#'   hardcode_chapter = TRUE, add_chapter = FALSE
+#' )
+#' }
 video_concat <- function(x,
                          out_path = NULL,
                          out_name = NULL,

@@ -75,6 +75,7 @@ video_batch_convert <- function(x,
 
     #handle filenames etc first
     x <- x_dir_or_files(x)
+    x <- x[grepl("\\.(mp4|mov|avi|mkv|webm|m4v|mpeg|mpg|wmv|flv)$", x, ignore.case = TRUE)]
 
     # if ((make_portable || cut_codec || hashtag_rm) && is.null(out_path)) {
     #     stop("out_path needed when make_portable || cut_codec || hashtag_rm")

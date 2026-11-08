@@ -1,7 +1,7 @@
 Package: av2
 Type: Package
 Title: Create or Run A Few ffmpeg Commands From R
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person(given = "Christopher Mark",
            family = "Skopnik",
@@ -32,4 +32,4 @@ Suggests:
     pak,
     stringi,
     vroom
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1
