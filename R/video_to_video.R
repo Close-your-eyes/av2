@@ -17,6 +17,12 @@
 #' -ss flag before -i (https://trac.ffmpeg.org/wiki/Seeking), define milliseconds
 #' like so: 2.500 for 2 sec and 500 millis or 00:00:02.500
 #' @param end end time, format like start; -to flag of ffmpeg
+#' @param start_frame first input frame to include (1-based, inclusive), or NULL
+#' to use start. Cannot be combined with start. Frame bounds are converted to
+#' seconds using the input frame rate and assume a constant-frame-rate video.
+#' @param end_frame last input frame to include (1-based, inclusive), or NULL
+#' to use end, duration or duration_frames. Cannot be combined with those
+#' arguments. Uses the same frame-rate assumption as start_frame.
 #' @param scale resize output images, c(width, height); either something like
 #' c(1280, 720) for exact pixels or c(0.5, 0.5) for fraction of input
 #' @param crop crop output video, c(width, height, x, y), where x and y define
@@ -60,6 +66,9 @@
 #'
 #' @examples
 #' \dontrun{
+#' # Include input frames 101 through 200 (100 frames at the input frame rate):
+#' video_to_video(x = "input.mp4", start_frame = 101, end_frame = 200)
+#'
 #' # this makes timelapse correctly
 #' # N = frame number starting at 0
 #' # 30 = fps
@@ -203,6 +212,8 @@ video_to_video <- function(x,
                            which_ffmpeg = "ffmpeg8",
                            run_cmd = T,
                            skip_existing = F,
+                           start_frame = NULL,
+                           end_frame = NULL,
                            ...) {
 
     # find ffmpeg more general:
@@ -219,9 +230,24 @@ video_to_video <- function(x,
 
     dots <- list(...)
 
+    frame_bounds <- list(start_frame = start_frame, end_frame = end_frame)
+    for (arg in names(frame_bounds)) {
+        value <- frame_bounds[[arg]]
+        if (!is.null(value) &&
+            (!is.numeric(value) || is.complex(value) || length(value) != 1L ||
+             !is.finite(value) || value < 1 || value != floor(value))) {
+            stop(arg, " must be a single positive integer or NULL.")
+        }
+    }
+    if (!is.null(start_frame) && !is.null(start)) {
+        stop("either set start or start_frame.")
+    }
+    if (!is.null(start_frame) && !is.null(end_frame) && end_frame < start_frame) {
+        stop("end_frame must be greater than or equal to start_frame.")
+    }
 
-    if (sum(!is.null(end), !is.null(duration), !is.null(duration_frames)) > 1) {
-        stop("either set end or duration or duration_frames.")
+    if (sum(!is.null(end), !is.null(end_frame), !is.null(duration), !is.null(duration_frames)) > 1) {
+        stop("either set end or end_frame or duration or duration_frames.")
     }
 
 
@@ -268,10 +294,8 @@ video_to_video <- function(x,
         dplyr::pull(value)
     fps_in <- info |>
         dplyr::filter(key2 == "video_r_frame_rate") |>
-        #dplyr::mutate(value = as.numeric(strsplit(value, "/")[[1]][1])) |>
-        #dplyr::rowwise() |>
-        dplyr::mutate(value = eval(parse(text = value))) |>
         dplyr::pull(value)
+    fps_in <- vapply(fps_in, function(value) as.numeric(eval(parse(text = value))), numeric(1))
     video_width <- info |>
         dplyr::filter(key2 == "video_width") |>
         dplyr::mutate(value = as.numeric(value)) |>
@@ -284,6 +308,18 @@ video_to_video <- function(x,
         dplyr::filter(key2 == "video_codec_name") |>
         dplyr::pull(value)
 
+    if (!is.null(start_frame) || !is.null(end_frame)) {
+        if (length(fps_in) != 1L || !is.finite(fps_in) || fps_in <= 0) {
+            stop("frame bounds require a single positive input frame rate.")
+        }
+        if (!is.null(start_frame)) {
+            start <- (start_frame - 1) / fps_in
+        }
+        if (!is.null(end_frame)) {
+            # -to is exclusive, so use the boundary after the last frame.
+            end <- end_frame / fps_in
+        }
+    }
 
 
     # do alter setpts below?

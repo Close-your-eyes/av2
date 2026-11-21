@@ -42,6 +42,8 @@ video_to_video(
   which_ffmpeg = "ffmpeg8",
   run_cmd = T,
   skip_existing = F,
+  start_frame = NULL,
+  end_frame = NULL,
   ...
 )
 }
@@ -124,6 +126,14 @@ av2::check_ffmpeg()}
 
 \item{skip_existing}{skip conversion of an existing output file on disk}
 
+\item{start_frame}{first input frame to include (1-based, inclusive), or NULL
+to use start. Cannot be combined with start. Frame bounds are converted to
+seconds using the input frame rate and assume a constant-frame-rate video.}
+
+\item{end_frame}{last input frame to include (1-based, inclusive), or NULL
+to use end, duration or duration_frames. Cannot be combined with those
+arguments. Uses the same frame-rate assumption as start_frame.}
+
 \item{...}{for internal use}
 }
 \value{
@@ -138,6 +148,9 @@ full complexity.
 }
 \examples{
 \dontrun{
+# Include input frames 101 through 200 (100 frames at the input frame rate):
+video_to_video(x = "input.mp4", start_frame = 101, end_frame = 200)
+
 # this makes timelapse correctly
 # N = frame number starting at 0
 # 30 = fps
